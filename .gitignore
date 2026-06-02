@@ -1,0 +1,12 @@
+.DS_Store
+
+# Local dependency/cache directories.
+project/defects4j/.cpanm/
+project/defects4j/local/
+
+# Defects4J downloaded repositories, generated workspaces, and build artifacts.
+project/defects4j/project_repos/
+project/defects4j/framework/lib/build_systems/
+project/defects4j/major/
+project/defects4j/work/
+project/workspaces/

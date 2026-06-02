@@ -1,0 +1,20 @@
+{
+  "by_quality": {
+    "expanded": 32,
+    "priority": 18
+  },
+  "by_repo": {
+    "backend": 30,
+    "frontend": 20
+  },
+  "create_worktrees": true,
+  "input": "/Users/jin/llm_location/project/fl-localizer/docs/easy_finance_candidate_bugfixes.md",
+  "output": "data/easy_finance/easy_finance_committed_50.jsonl",
+  "qualities": [
+    "expanded",
+    "priority"
+  ],
+  "records": 50,
+  "skipped": 0,
+  "skipped_records": []
+}
