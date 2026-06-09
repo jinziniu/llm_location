@@ -6517,3 +6517,910 @@ Interpretation:
 
 - Selected-case rerank quality is strong: all selected held-out cases reached Top-3.
 - The next improvement should be selector recall under a new frozen protocol, not tuning on `Closure-61..80`.
+
+## 2026-06-02 - Closure Held-Out 81..100 Frozen Validation
+
+Continued with a second frozen Closure held-out run after writing the `Closure-61..80` error analysis.
+
+Protocol:
+
+```text
+docs/frozen_protocol_2026-06-02_closure_81_100.md
+```
+
+Dataset:
+
+```text
+requested: Closure-81..100
+records: 19
+skipped: Closure-93, not listed in active-bugs.csv
+output: data/defects4j/closure_heldout_81_100.jsonl
+```
+
+Frozen retrieval:
+
+```text
+Top-1:  0.3158
+Top-3:  0.5789
+Top-5:  0.6316
+Top-10: 0.6842
+Top-20: 0.7895
+Top-50: 0.9474
+MRR:    0.4815
+```
+
+Selector:
+
+```text
+selected: 5 / 19
+selected_fraction: 0.2632
+selected ids: Closure-82, Closure-83, Closure-91, Closure-95, Closure-100
+```
+
+Reason counts:
+
+```text
+low_score_ratio<=1.02: 2
+pattern:closure_deep_specific_direct_hint: 1
+pattern:type_system: 2
+top1_without_direct_hint: 1
+```
+
+Selected-case DeepSeek rerank:
+
+```text
+Top-1:  0.8000
+Top-3:  1.0000
+Top-5:  1.0000
+Top-10: 1.0000
+MRR:    0.9000
+```
+
+Selected rank changes:
+
+```text
+Closure-82:  1  -> 2
+Closure-83:  2  -> 1
+Closure-91:  16 -> 1
+Closure-95:  2  -> 1
+Closure-100: 50 -> 1
+```
+
+Usage:
+
+```text
+records: 5
+total_tokens: 183017
+avg_total_tokens: 36603.40
+total_duration_seconds: 71.853
+avg_duration_seconds: 14.371
+```
+
+Merged result:
+
+```text
+Top-1:  0.4737
+Top-3:  0.6842
+Top-5:  0.7368
+Top-10: 0.7895
+MRR:    0.6009
+```
+
+Improvement over frozen retrieval:
+
+```text
+Top-1:  +0.1579
+Top-3:  +0.1053
+Top-5:  +0.1053
+Top-10: +0.1053
+MRR:    +0.1194
+```
+
+Important notes:
+
+- The merged main-method output is intentionally truncated to Top-10.
+- Use retrieval output for Candidate Recall@20 and Recall@50.
+- `Closure-98` is a retrieval Top-50 miss, so LLM rerank cannot recover it.
+- Selector recall remains the main limitation: it covered 2/7 baseline Top-5 failures and 2/6 baseline Top-10 failures.
+
+Outputs:
+
+```text
+docs/closure_heldout_81_100_validation_report.md
+outputs/closure_heldout_81_100_hybrid_focused_direct_passchain_typesystem_top50.jsonl
+outputs/closure_heldout_81_100_hybrid_focused_direct_passchain_typesystem_top50_eval.json
+outputs/closure_heldout_81_100_selector_closure_cost_control_v3.json
+outputs/closure_heldout_81_100_rerank_deepseek_closure_cost_control_v3_s12_ctx12000_top50.jsonl
+outputs/closure_heldout_81_100_rerank_deepseek_closure_cost_control_v3_s12_ctx12000_top50_eval.json
+outputs/closure_heldout_81_100_rerank_deepseek_closure_cost_control_v3_s12_ctx12000_top50_usage.json
+outputs/closure_heldout_81_100_merged_deepseek_closure_cost_control_v3_s12_ctx12000_top50.jsonl
+outputs/closure_heldout_81_100_merged_deepseek_closure_cost_control_v3_s12_ctx12000_top50_eval.json
+```
+
+## 2026-06-02 - Closure Frozen Held-Out Aggregate And Mockito Availability
+
+Checked whether Mockito could provide a new held-out slice.
+
+Result:
+
+```text
+active Mockito bugs: 1..38
+unused active Mockito bugs after 38: none
+```
+
+Decision:
+
+- Do not run a new Mockito held-out slice; this Defects4J checkout has no unused active Mockito bugs.
+- Report Mockito as pilot plus fresh validation.
+- Use Closure `61..100` as the current clean frozen held-out aggregate for the main method.
+
+Closure frozen held-out aggregate:
+
+```text
+dataset: Closure-61..100
+records: 38
+selector calls: 11
+selected_fraction: 0.2895
+```
+
+Baseline retrieval:
+
+```text
+Top-1:  0.3947
+Top-3:  0.5263
+Top-5:  0.6053
+Top-10: 0.7105
+Top-20: 0.8421
+Top-50: 0.9737
+MRR:    0.5080
+```
+
+Merged selective rerank:
+
+```text
+Top-1:  0.5526
+Top-3:  0.7105
+Top-5:  0.7632
+Top-10: 0.8421
+MRR:    0.6513
+```
+
+Improvement:
+
+```text
+Top-1:  +0.1579
+Top-3:  +0.1842
+Top-5:  +0.1579
+Top-10: +0.1316
+MRR:    +0.1434
+```
+
+Selector coverage:
+
+```text
+baseline Top-5 failures: 15
+selected among Top-5 failures: 6
+baseline Top-10 failures: 11
+selected among Top-10 failures: 5
+retrieval Top-50 misses: Closure-98
+```
+
+Cost:
+
+```text
+total_tokens: 408568
+avg_total_tokens_per_selected_case: 37142.55
+total_duration_seconds: 178.838
+avg_duration_seconds_per_selected_case: 16.258
+```
+
+Output:
+
+```text
+docs/closure_frozen_heldout_61_100_summary.md
+```
+
+## 2026-06-03 - Thesis Experiment Chapter Draft
+
+Created a thesis-ready experiment chapter draft after confirming that the current design should be written conservatively rather than expanded into full Defects4J.
+
+Added:
+
+```text
+docs/thesis_experiment_chapter_draft_2026-06-03.md
+```
+
+Content:
+
+- Experiment objective and main method boundary.
+- RQ1-RQ5 wording and direct answers.
+- Dataset scope: Defects4J pilot/fresh/frozen, AboutWork, Easy Finance.
+- Closure frozen held-out aggregate as the cleanest main result.
+- Mockito held-out availability note: active bugs only `1..38`.
+- Agentic/verifier RQ5 result as feasible but not better than one-shot; verifier is negative ablation.
+- Threats to validity and reproduction notes.
+
+Main writing stance:
+
+- Do not claim full Defects4J completion.
+- Do not claim agentic/verifier improves over one-shot.
+- Claim selective evidence-aware LLM rerank improves file-level localization when candidate recall is sufficient.
+
+## 2026-06-03 - Thesis Experiment Sections Draft
+
+Split the thesis experiment chapter into paper-ready sections.
+
+Added:
+
+```text
+docs/thesis_experiment_sections_2026-06-03.md
+```
+
+Content:
+
+- Experiment design section.
+- RQ1-RQ5 result sections.
+- Discussion section.
+- Threats to validity section.
+- Reproduction section.
+- A concise paragraph suitable for thesis abstract/results summary.
+
+## 2026-06-03 - Error Analysis Table
+
+Added a compact error-analysis table for the thesis discussion section.
+
+Added:
+
+```text
+docs/error_analysis_table_2026-06-03.md
+```
+
+Updated:
+
+```text
+docs/thesis_experiment_sections_2026-06-03.md
+docs/thesis_experiment_chapter_draft_2026-06-03.md
+```
+
+Main categories:
+
+- Selector false negative.
+- Candidate retrieval miss.
+- Utility-file ambiguity.
+- Semantic pass-family mismatch.
+- Code-output evidence gap.
+- Mockito selector generalization.
+- Agentic cost without clear gain.
+- Verifier over-correction.
+
+## 2026-06-03 - Closure-4 Type-Cycle Evidence Evolution Note
+
+Documented the Closure-4 pilot case as evidence-rule evolution rather than a held-out result.
+
+Added:
+
+```text
+docs/evidence_rule_evolution_closure4_typecycle.md
+```
+
+Updated:
+
+```text
+docs/thesis_experiment_sections_2026-06-03.md
+docs/thesis_experiment_chapter_draft_2026-06-03.md
+docs/error_analysis_table_2026-06-03.md
+docs/current_results_report.md
+```
+
+Main point:
+
+- `Closure-4` was not a retrieval miss: `NamedType.java` was in the candidate pool at rank 49.
+- It was an evidence/snippet miss: the original prompt did not expose `handleTypeCycle` and cycle warning text, while repeated subtype stack frames dominated the prompt.
+- Snippet scoring, repeated-stack compression, and the type-cycle prompt rule moved `NamedType.java` to DeepSeek rank 2.
+- This supports RQ2 as pilot method-evolution evidence, while the main held-out claim remains Closure `61..100`.
+
+## 2026-06-03 - Experiment Design Status Close-Out
+
+Updated the master experiment design document to reflect the current experiment completion state.
+
+Updated:
+
+```text
+docs/experiment_design.md
+```
+
+Main changes:
+
+- Updated the document date to 2026-06-03.
+- Added Defects4J fresh / held-out validation scope for Closure and Mockito.
+- Added a current experiment completion matrix covering Defects4J pilot, fresh validation, frozen held-out, real-project transfer, agentic/verifier, and error analysis.
+- Marked the final experiment-design/reporting phase as basically complete.
+- Reframed future experiments as optional follow-up work, not required before thesis writing.
+
+Current writing stance:
+
+- The experiment is sufficient for a thesis experiment chapter draft.
+- The next useful step is writing polish and consistency review, not expanding to full Defects4J.
+
+## 2026-06-03 - Current Results Report Consistency Update
+
+Updated stale status wording in the current results report.
+
+Updated:
+
+```text
+docs/current_results_report.md
+```
+
+Main changes:
+
+- Updated the report date to 2026-06-03.
+- Replaced the old "Mockito tight selector9 needs fresh bugs" wording with the current status: Mockito fresh validation has been run on `21..30` and `31..38`, and this Defects4J checkout has no active Mockito bugs after `38`.
+- Reframed future work as optional validation on new frozen protocols or new real-project data, not as required work before thesis writing.
+
+Follow-up consistency update:
+
+- Updated the limitations section from the old 120-bug Defects4J scope to the current approximate 215 usable Defects4J records.
+- Replaced the old next-step plan with thesis writing close-out, optional new-protocol validation, error-analysis cleanup, and RQ5 follow-up boundaries.
+- Added Closure frozen held-out token usage to the cost limitation list.
+
+## 2026-06-03 - Thesis Consistency Review Checklist
+
+Added a compact consistency checklist for moving the experiment draft into the thesis.
+
+Added:
+
+```text
+docs/thesis_consistency_review_2026-06-03.md
+```
+
+Content:
+
+- Canonical main claim.
+- Canonical dataset scope.
+- Canonical Closure `61..100` held-out metrics and cost.
+- RQ-to-evidence mapping.
+- Error-analysis anchors.
+- Writing rules to avoid overclaiming.
+
+## 2026-06-03 - Thesis Experiment Final Draft
+
+Created a more thesis-ready experiment chapter draft from the section split and consistency checklist.
+
+Added:
+
+```text
+docs/thesis_experiment_final_draft_2026-06-03.md
+```
+
+Content:
+
+- Experiment design with RQ table, method boundary, dataset table, no-leakage protocol, and metrics.
+- Results section with numbered tables for Defects4J pilot, Closure frozen held-out, real-project case studies, and RQ5 ablation.
+- Discussion and compact error analysis.
+- Threats to validity and reproduction notes.
+- Conservative final summary centered on Closure `61..100` as the strongest benchmark result.
+
+## 2026-06-03 - Thesis Method Chapter Draft
+
+Created a thesis-ready method chapter draft aligned with the final experiment draft.
+
+Added:
+
+```text
+docs/thesis_method_chapter_draft_2026-06-03.md
+```
+
+## 2026-06-03 - RQ Answer Synthesis And Consistency Cleanup
+
+Consolidated the final RQ1--RQ5 answers after the Defects4J RQ5 mini-benchmark.
+
+Added:
+
+```text
+docs/rq_answers_final_2026-06-03.md
+```
+
+Main RQ synthesis:
+
+- RQ1: LLM rerank improves Defects4J file-level localization when candidate recall is sufficient.
+- RQ2: candidate recall, selector recall, and evidence quality dominate remaining failures.
+- RQ3: selective rerank preserves gains with limited LLM calls, but selector recall remains the main risk.
+- RQ4: AboutWork and Easy Finance support real-project transfer as case-study evidence only.
+- RQ5: Easy Finance strict62 plus Defects4J diagnostic mini-benchmark show agentic/verifier are feasible but not better than one-shot; verifier is a negative ablation.
+
+Updated consistency-sensitive docs:
+
+```text
+docs/error_analysis_table_2026-06-03.md
+docs/experiment_design.md
+docs/current_results_report.md
+docs/thesis_experiment_final_draft_2026-06-03.md
+docs/thesis_experiment_sections_2026-06-03.md
+docs/thesis_experiment_chapter_draft_2026-06-03.md
+docs/thesis_related_work_draft_2026-06-03.md
+docs/thesis_consistency_review_2026-06-03.md
+```
+
+Cleanup:
+
+- Replaced stale wording that implied RQ5 was supported only by Easy Finance strict62.
+- Added Defects4J RQ5 mini to dataset/method scope tables.
+- Updated the error analysis table with Defects4J mini agentic regressions: `Math-12`, `Closure-4`, `Closure-13`, and `Mockito-28`.
+- Verified no remaining stale strict62-only RQ5 wording in docs.
+
+## 2026-06-08 - AboutWork Committed-40 Dataset Update
+
+Checked `/Users/jin/capi_project/aboutwork/COMPANY_BUG_LOG.md` for newly usable
+AboutWork company bug records.
+
+Findings:
+
+- Rebuilding the committed dataset directly from the Markdown still yields 39 records because most new entries have `Fix commit: pending ...` or incomplete standard fields.
+- Added one clean file-level committed record manually as a new versioned dataset: `aboutwork-20260603-001`.
+- Excluded `aboutwork-20260603-002` because it is currently an OpenSearch FGAC/environment configuration sample with incomplete localization fields and no clean source-file-only ground truth.
+
+Added:
+
+```text
+data/aboutwork/aboutwork_committed_40.jsonl
+outputs/aboutwork_committed_40_bm25_top50.jsonl
+outputs/aboutwork_committed_40_bm25_top50_eval.json
+docs/aboutwork_committed_40_update_2026-06-08.md
+```
+
+Created buggy worktree:
+
+```text
+/Users/jin/llm_location/project/workspaces/aboutwork/aboutwork-20260603-001_backend_4954da19ab9a
+```
+
+New record:
+
+| Bug ID | Fixed Commit | Ground Truth | BM25 Rank |
+|---|---|---|---:|
+| `aboutwork-20260603-001` | `cee869746be89900fae1a48dc9d566b2dee5200b` | `backend/opensearch/connectors.py` | 3 |
+
+BM25 validation:
+
+| Dataset | Bugs | Top-1 | Top-3 | Top-5 | Top-10 | Top-50 | MRR |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| AboutWork committed-39 BM25 top50 | 39 | 0.5897 | 0.8462 | 0.9487 | 0.9487 | 1.0000 | 0.7171 |
+| AboutWork committed-40 BM25 top50 | 40 | 0.5750 | 0.8500 | 0.9500 | 0.9500 | 1.0000 | 0.7075 |
+
+Note:
+
+- Keep thesis tables on AboutWork-39 unless rerunning the full downstream
+  selective rerank / DeepSeek experiments on AboutWork-40.
+
+Content:
+
+- Problem definition.
+- Main selective evidence-aware pipeline.
+- Focused hybrid retrieval.
+- Evidence construction and stack-trace compaction.
+- Non-oracle selective rerank gate.
+- One-shot DeepSeek rerank prompt and JSON output schema.
+- Output normalization and retrieval fallback.
+- RQ5 extension boundary for agentic / verifier.
+- Method limitations.
+
+## 2026-06-03 - Thesis Intro And Conclusion Draft
+
+Created thesis front/back matter aligned with the method and experiment drafts.
+
+Added:
+
+```text
+docs/thesis_intro_conclusion_draft_2026-06-03.md
+```
+
+Content:
+
+- Chinese abstract draft.
+- English abstract draft.
+- Introduction draft.
+- Contributions.
+- Conclusion.
+- Future work.
+- Explicit overclaiming warnings.
+
+## 2026-06-03 - Thesis Related Work Draft
+
+Created a related work chapter draft with citation placeholders.
+
+Added:
+
+```text
+docs/thesis_related_work_draft_2026-06-03.md
+```
+
+Content:
+
+- Fault localization task and granularity.
+- Spectrum-based fault localization.
+- IR-based fault localization.
+- Learning/deep fault localization.
+- LLMs for software engineering.
+- Evidence-aware prompting and context selection.
+- Selective invocation and cost control.
+- Agentic debugging and verifier work.
+- Benchmark validity and Defects4J.
+- Explicit positioning of this method relative to prior work.
+
+## 2026-06-03 - RQ5 Defects4J Diagnostic Mini-Benchmark
+
+Ran the requested benchmark-side RQ5 extension experiment for agentic/verifier.
+
+Added protocol and build script:
+
+```text
+docs/rq5_defects4j_mini_benchmark_protocol_2026-06-03.md
+scripts/build_rq5_defects4j_mini_benchmark.py
+```
+
+Built frozen diagnostic inputs:
+
+```text
+data/defects4j/rq5_defects4j_mini_10.jsonl
+outputs/rq5_defects4j_mini_10_baseline_top50.jsonl
+outputs/rq5_defects4j_mini_10_manifest.json
+```
+
+Frozen case set:
+
+```text
+Math-12
+Math-14
+Closure-4
+Closure-13
+Closure-65
+Closure-67
+Closure-75
+Closure-98
+Mockito-26
+Mockito-28
+```
+
+Baseline audit:
+
+- 9/10 cases have the ground-truth file in baseline top50.
+- `Closure-98` is the intentional retrieval-boundary negative case.
+- Retrieval baseline: Top1 0.0000 / Top3 0.0000 / Top5 0.0000 / Top10 0.2000 / MRR 0.0534.
+
+Ran dry-run checks for all three arms:
+
+```text
+outputs/rq5_defects4j_mini_10_oneshot_dryrun.jsonl
+outputs/rq5_defects4j_mini_10_agentic_dryrun.jsonl
+outputs/rq5_defects4j_mini_10_agentic_dryrun_trace.jsonl
+outputs/rq5_defects4j_mini_10_agentic_verifier_dryrun.jsonl
+```
+
+Ran DeepSeek arms and evaluations:
+
+| Method | API Calls | Top-1 | Top-3 | Top-5 | Top-10 | MRR | Tokens |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| One-shot DeepSeek | 10 | 0.4000 | 0.7000 | 0.8000 | 0.9000 | 0.5644 | 345937 |
+| Agentic DeepSeek | 32 | 0.3000 | 0.6000 | 0.6000 | 0.8000 | 0.4768 | 441952 |
+| Agentic + verifier DeepSeek | 42 | 0.3000 | 0.6000 | 0.6000 | 0.8000 | 0.4768 | 554133 |
+
+Per-bug rank changes:
+
+| Bug | Baseline | One-shot | Agentic | Agentic+Verifier |
+|---|---:|---:|---:|---:|
+| Math-12 | 47 | 9 | miss | miss |
+| Math-14 | 17 | 1 | 1 | 1 |
+| Closure-4 | 49 | 5 | 8 | 8 |
+| Closure-13 | 39 | 3 | 7 | 7 |
+| Closure-65 | 8 | 1 | 1 | 1 |
+| Closure-67 | 48 | 2 | 2 | 2 |
+| Closure-75 | 21 | 2 | 2 | 2 |
+| Closure-98 | miss | miss | miss | miss |
+| Mockito-26 | 7 | 1 | 1 | 1 |
+| Mockito-28 | 14 | 1 | 2 | 2 |
+
+Conclusion:
+
+- One-shot evidence-aware rerank is the best arm on this Defects4J diagnostic mini-benchmark.
+- Agentic inspection is runnable and produces traces, but it is worse than one-shot on this case set.
+- Verifier adds 112181 tokens and does not improve any aggregate metric or per-bug rank.
+- This result extends the Easy Finance strict62 RQ5 conclusion to a benchmark-side diagnostic setting: agentic/verifier should remain RQ5 ablation, not the main method.
+
+Added result report and synchronized thesis docs:
+
+```text
+docs/rq5_defects4j_mini_benchmark_results_2026-06-03.md
+docs/current_results_report.md
+docs/thesis_experiment_final_draft_2026-06-03.md
+docs/thesis_consistency_review_2026-06-03.md
+docs/thesis_method_chapter_draft_2026-06-03.md
+```
+
+## 2026-06-08 - AboutWork Buglog Re-read and Committed-54 Dataset
+
+Re-read the updated company bug log:
+
+```text
+/Users/jin/capi_project/aboutwork/COMPANY_BUG_LOG.md
+```
+
+The previous AboutWork committed-40 update was only a provisional one-record
+addition. The full updated log now builds to 54 committed file-level records:
+
+```text
+data/aboutwork/aboutwork_committed_54.jsonl
+```
+
+Delta:
+
+- Compared with `data/aboutwork/aboutwork_committed_40.jsonl`: 14 added records.
+- Compared with original thesis `data/aboutwork/aboutwork_committed_39.jsonl`: 15 added records.
+- Formal `--create-worktrees` build skipped 4 entries because they are pending,
+  documentation-only/local-note entries, uncommitted local changes, or
+  environment/configuration fixes rather than clean source-file localization
+  samples.
+
+Updated the builder:
+
+```text
+scripts/build_aboutwork_dataset.py
+```
+
+Data hygiene changes:
+
+- Keep only source-like ground-truth paths.
+- Exclude non-file notes from `Ground truth files`.
+- Remap `backend/backend/...` to `backend/...` only when validated against the
+  buggy worktree.
+- Exclude ground-truth files that were added by the fixed commit and do not
+  exist in the buggy version.
+
+Generated BM25 baseline and evaluation:
+
+```text
+outputs/aboutwork_committed_54_bm25_top50.jsonl
+outputs/aboutwork_committed_54_bm25_top50_eval.json
+```
+
+BM25 top50 validation:
+
+| Dataset | Bugs | Top-1 | Top-3 | Top-5 | Top-10 | Top-50 | MRR |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| AboutWork committed-39 | 39 | 0.5897 | 0.8462 | 0.9487 | 0.9487 | 1.0000 | 0.7171 |
+| AboutWork committed-40 | 40 | 0.5750 | 0.8500 | 0.9500 | 0.9500 | 1.0000 | 0.7075 |
+| AboutWork committed-54 | 54 | 0.5741 | 0.8148 | 0.9074 | 0.9259 | 1.0000 | 0.6991 |
+
+Added update note:
+
+```text
+docs/aboutwork_committed_54_update_2026-06-08.md
+```
+
+Important interpretation:
+
+- This is a dataset and BM25-validation update.
+- DeepSeek/selective rerank has not yet been rerun on AboutWork committed-54.
+- Existing thesis AboutWork-39 downstream results remain the reported results
+  until the downstream experiments are explicitly rerun on committed-54.
+
+## 2026-06-08 - AboutWork Git History Supplement Scan
+
+Scanned recent backend/frontend git history under:
+
+```text
+/Users/jin/capi_project/aboutwork/backend
+/Users/jin/capi_project/aboutwork/frontend
+```
+
+Created supplement candidate note:
+
+```text
+docs/aboutwork_git_history_supplement_candidates_2026-06-08.md
+```
+
+Finding:
+
+- 6 high-quality clean candidates can likely move AboutWork from committed-54 to
+  committed-60.
+- 2 to 3 optional candidates can move it toward committed-62/63, close to Easy
+  Finance `strict62` / `clean63`.
+- Several recent commits were rejected as broad feature, performance,
+  migration-heavy, docs/local-config, or mixed low-severity bundles.
+
+## 2026-06-08 - AboutWork Committed-60 First-Batch Supplement
+
+Implemented the 6 clean git-history candidates in:
+
+```text
+/Users/jin/capi_project/aboutwork/COMPANY_BUG_LOG.md
+```
+
+Generated:
+
+```text
+docs/aboutwork_buglog_supplement_entries_2026-06-08.md
+data/aboutwork/aboutwork_committed_60.jsonl
+outputs/aboutwork_committed_60_bm25_top50.jsonl
+outputs/aboutwork_committed_60_bm25_top50_eval.json
+docs/aboutwork_committed_60_update_2026-06-08.md
+```
+
+Build result:
+
+- `Wrote 60 AboutWork committed bug record(s)`.
+- `Skipped 4 non-committed/template/incomplete entrie(s)`.
+- Compared with committed-54: 6 added records.
+- Compared with original committed-39: 21 added records.
+
+BM25 top50 validation:
+
+| Dataset | Bugs | Top-1 | Top-3 | Top-5 | Top-10 | Top-50 | MRR |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| AboutWork committed-54 | 54 | 0.5741 | 0.8148 | 0.9074 | 0.9259 | 1.0000 | 0.6991 |
+| AboutWork committed-60 | 60 | 0.5667 | 0.8333 | 0.9167 | 0.9333 | 1.0000 | 0.7015 |
+
+New record BM25 ranks:
+
+| Bug ID | Correct Rank |
+|---|---:|
+| `aboutwork-20260605-001` | 2 |
+| `aboutwork-20260602-001` | 1 |
+| `aboutwork-20260603-003` | 3 |
+| `aboutwork-20260605-002` | 1 |
+| `aboutwork-20260605-003` | 2 |
+| `aboutwork-20260526-013` | 1 |
+
+Interpretation:
+
+- AboutWork committed-60 is now the current updated real-project dataset.
+- At this point, DeepSeek/selective rerank had not yet been rerun on
+  committed-60. This status is superseded by the next worklog entry.
+
+## 2026-06-08 - AboutWork Committed-60 Selective DeepSeek Rerun
+
+Reran the AboutWork real-project experiment on the updated committed-60 dataset.
+
+Inputs:
+
+```text
+data/aboutwork/aboutwork_committed_60.jsonl
+outputs/aboutwork_committed_60_bm25_top50.jsonl
+outputs/aboutwork60_selector_v3.json
+```
+
+Selector:
+
+- AboutWork `selector_v3` family.
+- `score_ratio_threshold = 1.02`.
+- Selected 16/60 records.
+- Selected fraction: 0.2667.
+
+LLM rerank:
+
+```text
+provider: deepseek
+model: deepseek-v4-flash
+top_candidates: 50
+top_output: 10
+include_retrieval_evidence: true
+```
+
+Generated:
+
+```text
+outputs/aboutwork_committed_60_rerank_deepseek_selector_v3.jsonl
+outputs/aboutwork_committed_60_bm25_plus_deepseek_selector_v3.jsonl
+outputs/aboutwork_committed_60_bm25_plus_deepseek_selector_v3_eval.json
+outputs/aboutwork_committed_60_rerank_deepseek_selector_v3_usage.json
+docs/aboutwork_committed_60_rerank_results_2026-06-08.md
+```
+
+Aggregate result:
+
+| Method | LLM Calls | Top-1 | Top-3 | Top-5 | Top-10 | MRR |
+|---|---:|---:|---:|---:|---:|---:|
+| BM25 production top50 | 0/60 | 0.5667 | 0.8333 | 0.9167 | 0.9333 | 0.7015 |
+| BM25 + selector_v3 + DeepSeek | 16/60 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 |
+
+Selected-case behavior:
+
+| Subset | Top-1 | Top-3 | Top-5 | Top-10 | MRR |
+|---|---:|---:|---:|---:|---:|
+| BM25 selected subset | 7/16 | 9/16 | 13/16 | 14/16 | 0.5486 |
+| DeepSeek selected subset | 15/16 | 16/16 | 16/16 | 16/16 | 0.9688 |
+
+Usage:
+
+```text
+records: 16
+total_tokens: 519530
+avg_total_tokens: 32470.62
+total_duration_seconds: 336.034
+avg_duration_seconds: 21.002
+```
+
+Remaining Top-10 misses:
+
+- `aboutwork-20260528-002`: `backend/chatbot_v2/planning.py`, BM25 rank 14,
+  unselected.
+- `aboutwork-20260603-001`: `backend/opensearch/connectors.py`, BM25 rank 26,
+  unselected.
+
+Interpretation:
+
+- AboutWork committed-60 is now the current RQ4 AboutWork result.
+- Selective DeepSeek improves all reported Top-k metrics and MRR over BM25 while
+  calling the LLM on 26.7% of records.
+- The main remaining weakness is selector recall; both final Top-10 misses are
+  unselected false negatives.
+
+## 2026-06-08 - AboutWork Committed-60 Agentic / Verifier Extension
+
+Completed the RQ5-style agentic and verifier extension on the same AboutWork-60
+selector set.
+
+Inputs:
+
+```text
+data/aboutwork/aboutwork_committed_60.jsonl
+outputs/aboutwork_committed_60_bm25_top50.jsonl
+outputs/aboutwork60_selector_v3.json
+```
+
+Selection:
+
+- Same AboutWork `selector_v3` set as the one-shot run.
+- Selected 16/60 records.
+
+Agentic configuration:
+
+```text
+provider: deepseek
+model: deepseek-v4-flash
+top_candidates: 50
+top_output: 10
+max_steps: 2
+```
+
+Generated:
+
+```text
+outputs/aboutwork_committed_60_agentic_deepseek_selector_v3_s2.jsonl
+outputs/aboutwork_committed_60_agentic_deepseek_selector_v3_s2_trace.jsonl
+outputs/aboutwork_committed_60_agentic_deepseek_selector_v3_s2_usage.json
+outputs/aboutwork_committed_60_bm25_plus_agentic_deepseek_selector_v3_s2.jsonl
+outputs/aboutwork_committed_60_bm25_plus_agentic_deepseek_selector_v3_s2_eval.json
+outputs/aboutwork_committed_60_agentic_plus_verifier_deepseek_selector_v3_s2.jsonl
+outputs/aboutwork_committed_60_agentic_plus_verifier_deepseek_selector_v3_s2_usage.json
+outputs/aboutwork_committed_60_bm25_plus_agentic_verifier_deepseek_selector_v3_s2.jsonl
+outputs/aboutwork_committed_60_bm25_plus_agentic_verifier_deepseek_selector_v3_s2_eval.json
+docs/aboutwork_committed_60_agentic_verifier_results_2026-06-08.md
+```
+
+Aggregate result:
+
+| Method | Selected Records | Model Calls | Top-1 | Top-3 | Top-5 | Top-10 | MRR |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| BM25 production top50 | 0/60 | 0 | 0.5667 | 0.8333 | 0.9167 | 0.9333 | 0.7015 |
+| BM25 + selector_v3 + one-shot DeepSeek | 16/60 | 16 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 |
+| BM25 + selector_v3 + agentic DeepSeek s2 | 16/60 | 40 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 |
+| BM25 + selector_v3 + agentic s2 + verifier | 16/60 | 56 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 |
+
+Usage:
+
+| Method | Records | Total Tokens | Avg Tokens | Total Seconds | Avg Seconds |
+|---|---:|---:|---:|---:|---:|
+| One-shot DeepSeek | 16 | 519530 | 32470.62 | 336.034 | 21.002 |
+| Agentic DeepSeek s2 | 16 | 440542 | 27533.88 | 339.600 | 21.225 |
+| Verifier extra pass | 16 | 148718 | 9294.88 | 196.194 | 12.262 |
+| Agentic s2 + verifier total | 16 | 589260 | 36828.75 | 535.794 | 33.487 |
+
+Interpretation:
+
+- One-shot, agentic, and agentic + verifier have identical correct ranks on all
+  60 AboutWork records.
+- AboutWork-60 confirms the previous RQ5 pattern: agentic inspection is
+  technically runnable but does not improve over one-shot rerank.
+- Verifier adds cost without changing aggregate metrics or per-bug ranks, so it
+  remains a negative ablation.

@@ -1,7 +1,7 @@
 # Current Results Report: LLM-Assisted Fault Localization
 
 生成日期：2026-05-27
-更新日期：2026-06-02
+更新日期：2026-06-08
 
 结果整合版：
 
@@ -53,14 +53,14 @@ docs/results_integration_2026-05-27.md
 - `Closure-13` 原本是 focused hybrid top-200 miss；新增 pass-chain retrieval 后，`PeepholeOptimizationsPass.java` 进入候选池 rank 39，DeepSeek rerank 后达到 rank 3。
 - `Closure-4` 原本是 rerank miss；snippet scoring、重复栈压缩和 type-cycle prompt rule 后，`NamedType.java` 从候选 rank 49 被 DeepSeek 提到 rank 2。
 - `Mockito-20` 已接入 benchmark：focused hybrid/direct 的 Top-50 召回为 1.00，但 Top-5 只有 0.65，说明 LLM rerank 有足够候选池和明确优化空间。
-- Mockito-specific pattern selector 覆盖 7/7 个 baseline Top-5 failures，选择 12/20；后续需要进一步收紧。
+- Mockito-specific pattern selector 覆盖 7/7 个 baseline Top-5 failures，选择 12/20；后续已收紧为 tight selector9。
 - Mockito hard7 diagnostic DeepSeek 将整体 Top-1/Top-3/Top-5 从 0.35/0.55/0.65 提升到 0.55/0.85/0.95，MRR 从 0.4818 提升到 0.7033。
 - 针对 `Mockito-20` 增加 constructor/spy MockMaker evidence rule 后，`ByteBuddyMockMaker.java` 从 baseline rank 23 提升到 DeepSeek rank 3；最终 Mockito Top-5 达到 1.00。
 - Mockito tight selector9 将 pattern selection 从 12/20 收紧到 9/20，并覆盖 baseline 全部 Top-3 misses。
 - 补跑 `Mockito-3` 和 `Mockito-19` 后，Mockito 整体达到 Top-1 0.65、Top-3 1.00、Top-5 1.00、MRR 0.8000。
-- Mockito tight selector9 运行时不使用 ground truth，但仍是在当前 Mockito-20 pilot 上调出的 in-sample 规则，需要 fresh bugs 验证泛化。
+- Mockito tight selector9 运行时不使用 ground truth，但仍是在 Mockito-20 pilot 上调出的 in-sample 规则。后续已在 Mockito `21..30` 和 `31..38` 做 fresh validation；当前 Defects4J checkout 没有 `38` 之后的 active Mockito bugs，因此不能再构造新的 Mockito held-out slice。
 - Closure 上的宽泛 reference-hint expansion 会引入大量噪声，实验结果低于默认 focused retrieval，因此暂时不作为默认方法。
-- 2026-06-01 已补充 fresh / held-out validation：Closure `21..60`、Mockito `31..38` 和 frozen held-out Closure `61..80` 均显示 selective rerank 能在较少调用下提升 Top-k，但 selector recall 仍是主要风险。
+- 2026-06-01/02 已补充 fresh / held-out validation：Closure `21..60`、Mockito `31..38` 和 frozen held-out Closure `61..100` 均显示 selective rerank 能在较少调用下提升 Top-k，但 selector recall 仍是主要风险。
 - 当前主要瓶颈从单纯 BM25 排序转为 candidate retrieval 质量、prompt 证据选择和 token 成本控制。
 - 如果真实缺陷文件不在候选池内，LLM rerank 无法补救；因此扩大实验前应优先保证 top-50/top-80 召回。
 
@@ -74,6 +74,10 @@ docs/results_integration_2026-05-27.md
 | Closure-21..60 | cost-control v3 + DeepSeek | 40 | 20 | 0.6000 | 0.8000 | 0.9750 | 1.0000 | 0.7348 |
 | Closure-61..80 held-out | frozen retrieval baseline | 19 | 0 | 0.4737 | 0.4737 | 0.5789 | 0.7368 | 0.5344 |
 | Closure-61..80 held-out | frozen cost-control v3 + DeepSeek | 19 | 6 | 0.6316 | 0.7368 | 0.7895 | 0.8947 | 0.7018 |
+| Closure-81..100 held-out | frozen retrieval baseline | 19 | 0 | 0.3158 | 0.5789 | 0.6316 | 0.6842 | 0.4815 |
+| Closure-81..100 held-out | frozen cost-control v3 + DeepSeek | 19 | 5 | 0.4737 | 0.6842 | 0.7368 | 0.7895 | 0.6009 |
+| Closure-61..100 held-out aggregate | frozen retrieval baseline | 38 | 0 | 0.3947 | 0.5263 | 0.6053 | 0.7105 | 0.5080 |
+| Closure-61..100 held-out aggregate | frozen cost-control v3 + DeepSeek | 38 | 11 | 0.5526 | 0.7105 | 0.7632 | 0.8421 | 0.6513 |
 | Mockito-31..38 fresh | focused retrieval baseline | 8 | 0 | 0.1250 | 0.5000 | 0.7500 | 0.8750 | 0.3382 |
 | Mockito-31..38 fresh | cost-control v2 + DeepSeek | 8 | 4 | 0.6250 | 1.0000 | 1.0000 | 1.0000 | 0.7500 |
 
@@ -83,14 +87,20 @@ docs/results_integration_2026-05-27.md
 - `Closure-61..80` 是第一组明确 frozen protocol held-out run：先写 `docs/frozen_protocol_2026-06-01.md`，再运行数据构建、retrieval、selector、rerank 和 eval。
 - `Closure-61..80` 的 selector 只选 6/19，selected cases 全部进入 Top-3；合并结果比 frozen retrieval baseline 明显提升。
 - `Closure-61..80` 暴露了 selector false negatives：`Closure-61`、`Closure-65`、`Closure-67`、`Closure-75` 没有被选中，其中 `Closure-67` 和 `Closure-75` 是最重要的 remaining misses。
+- `Closure-81..100` 是第二组明确 frozen protocol held-out run：selector 选 5/19，selected cases 全部进入 Top-3，合并结果继续提升 Top-k 和 MRR。
+- `Closure-81..100` 同时暴露两个限制：selector 只覆盖 2/7 个 baseline Top-5 failures，且 `Closure-98` 是 retrieval Top-50 miss。
+- `Closure-61..100` aggregate 覆盖 38 个 frozen held-out bugs，selector 调用 11/38，Top-5 从 0.6053 提升到 0.7632，MRR 从 0.5080 提升到 0.6513。
 - merged selective rerank 输出是 Top-10 ranking，因此 Top-20/Top-50 candidate recall 应从 retrieval baseline 报告，不应从 merged output 解读。
-- `Mockito-31..38` 是正向 fresh result，但 cost-control v2 仍是在之前 fresh behavior 后设计出的 experimental selector，需要再跑 held-out 才能作为稳定协议。
+- `Mockito-31..38` 是正向 fresh result，但 cost-control v2 仍是在之前 fresh behavior 后设计出的 experimental selector；当前 Defects4J Mockito active bugs 只有 1..38，因此没有新的 Mockito held-out slice 可跑。
 
 新增报告：
 
 ```text
 docs/closure_heldout_61_80_validation_report.md
+docs/closure_heldout_81_100_validation_report.md
+docs/closure_frozen_heldout_61_100_summary.md
 docs/frozen_protocol_2026-06-01.md
+docs/frozen_protocol_2026-06-02_closure_81_100.md
 ```
 
 Proposal-aligned interpretation:
@@ -98,8 +108,46 @@ Proposal-aligned interpretation:
 - 当前主方法应写作 `Selective Evidence-Aware LLM Fault Localization`。
 - Defects4J 回答 benchmark 有效性问题，即 RQ1、RQ2、RQ3。
 - AboutWork 和 Easy Finance 回答真实项目迁移问题，即 RQ4。
-- Easy Finance strict62 上的 controlled agentic / verifier 结果回答 RQ5；当前结论是技术可行，但没有证明优于 one-shot rerank。
+- Easy Finance strict62、Defects4J diagnostic mini-benchmark 和 AboutWork committed-60 上的 controlled agentic / verifier 结果回答 RQ5；当前结论是技术可行，但没有证明优于 one-shot rerank。
 - Codex backend 已做 smoke test，但不再作为当前核心 RQ，只保留为后续工程对比。
+
+## 1.2 RQ5 Agentic / Verifier Extensions
+
+2026-06-03 新增 Defects4J RQ5 diagnostic mini-benchmark，用于在 benchmark 侧补充 Easy Finance strict62 的 agentic / verifier ablation。该 mini-benchmark 包含 10 个已知诊断类别 case，不作为新的主 held-out 泛化结果；主 benchmark 结果仍是 Closure `61..100` frozen held-out aggregate。
+
+| Method | API Calls | Top-1 | Top-3 | Top-5 | Top-10 | MRR | Tokens |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Retrieval baseline top50 | 0 | 0.0000 | 0.0000 | 0.0000 | 0.2000 | 0.0534 | 0 |
+| One-shot DeepSeek | 10 | 0.4000 | 0.7000 | 0.8000 | 0.9000 | 0.5644 | 345937 |
+| Agentic DeepSeek | 32 | 0.3000 | 0.6000 | 0.6000 | 0.8000 | 0.4768 | 441952 |
+| Agentic + verifier DeepSeek | 42 | 0.3000 | 0.6000 | 0.6000 | 0.8000 | 0.4768 | 554133 |
+
+关键解释：
+
+- one-shot DeepSeek 是该 mini-benchmark 的最佳 arm，将 Top-10 从 0.2000 提升到 0.9000，MRR 从 0.0534 提升到 0.5644。
+- Agentic inspection 可运行并生成 trace，但在 `Math-12`、`Closure-4`、`Closure-13`、`Mockito-28` 上相对 one-shot 退化。
+- Verifier 额外消耗 112181 tokens，但没有改善 agentic 的任何 aggregate 指标或 per-bug rank，因此是 negative ablation。
+- 该结果与 Easy Finance strict62 和 AboutWork committed-60 一致：agentic / verifier 目前只应作为 RQ5 扩展实验，不应替代 selective one-shot rerank 主方法。
+
+2026-06-08 补跑 AboutWork committed-60 RQ5 extension：
+
+| Method | Selected Records | Model Calls | Top-1 | Top-3 | Top-5 | Top-10 | MRR | Tokens |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| One-shot DeepSeek | 16 / 60 | 16 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 | 519530 |
+| Agentic DeepSeek s2 | 16 / 60 | 40 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 | 440542 |
+| Agentic s2 + verifier | 16 / 60 | 56 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 | 589260 |
+
+AboutWork-60 上 one-shot、agentic 和 agentic + verifier 的 per-bug correct
+rank 完全一致；verifier 额外消耗 148718 tokens，但没有改变任何 aggregate
+指标或 per-bug correct rank。
+
+新增报告：
+
+```text
+docs/rq5_defects4j_mini_benchmark_protocol_2026-06-03.md
+docs/rq5_defects4j_mini_benchmark_results_2026-06-03.md
+docs/aboutwork_committed_60_agentic_verifier_results_2026-06-08.md
+```
 
 ## 2. 当前项目状态
 
@@ -589,8 +637,8 @@ The remaining failures are increasingly dominated by candidate retrieval misses,
 
 样本规模限制：
 
-- 当前完成 120 个 Defects4J bugs，来自 6 个项目，每个项目前 20 个 active bugs。
-- 当前公司项目 case study 包括 AboutWork 39 条 committed bug logs 和 Easy Finance clean63 / strict62。
+- 当前完成约 215 个 usable Defects4J records：120 个 pilot bugs、Closure fresh `21..60` 40 个、Closure frozen held-out `61..100` 38 个、Mockito fresh usable records 17 个。
+- 当前公司项目 case study 包括 AboutWork committed-60 和 Easy Finance clean63 / strict62。
 - 还不能声称对整个 Defects4J 都有效。
 
 评价粒度限制：
@@ -601,7 +649,7 @@ The remaining failures are increasingly dominated by candidate retrieval misses,
 多文件 bug 限制：
 
 - 当前只要命中任一 ground-truth file 就算成功。
-- 后续需要补充 all-file recall 和 partial recall。
+- all-file recall 和 partial recall 可以作为后续补充指标；当前论文正文应明确 any-hit file-level definition。
 
 候选池限制：
 
@@ -615,7 +663,8 @@ The remaining failures are increasingly dominated by candidate retrieval misses,
 - Mockito hard7 diagnostic rerank 使用 152020 total tokens，平均每次约 21.7k tokens。
 - Mockito final diagnostic output adds one successful M20 rule call with 25568 tokens; the failed M20 evidence retry used another 26057 tokens during development.
 - Mockito tight selector9 deployment-equivalent estimate uses 9 calls and 195100 tokens, averaging about 21.7k tokens per selected bug.
-- 扩大到全量 Defects4J 前需要优化 snippet 长度和候选数量。
+- Closure frozen held-out aggregate 使用 11 次调用、408568 total tokens，平均每个 selected case 37142.55 tokens。
+- 当前不建议为了论文初稿扩大到全量 Defects4J；如果后续扩展，才需要先系统优化 snippet 长度和候选数量。
 
 模型版本限制：
 
@@ -624,46 +673,32 @@ The remaining failures are increasingly dominated by candidate retrieval misses,
 
 ## 10. 下一步计划
 
-第一优先级：验证 selector 泛化。
+第一优先级：论文写作收口和一致性检查。
 
-- 用 fresh Mockito bugs 验证 tight selector9，而不是继续在同一 20 个 bug 上调参。
-- 用新增 AboutWork bug logs 验证 selector_v3。
-- 用新增 Easy Finance bug logs 或新时间段 commit 验证 selector_v1 和 UI evidence v2。
+- 把 `docs/thesis_experiment_sections_2026-06-03.md` 拆入论文正文。
+- 统一 RQ、表格编号、数据集名称、Top-k/MRR 数字和 threats-to-validity 口径。
+- 保持主方法、RQ5 extension 和 verifier ablation 分开报告。
+- 使用 Closure `61..100` frozen held-out aggregate 作为最强 Defects4J 主结果。
 
-第二优先级：把 diagnostic evidence 转成自动规则。
+第二优先级：可选的新协议验证。
 
-- 将 pass-chain / configuration-aware retrieval 从 Closure-13 的定点成功扩展成更稳的 gate，而不是默认影响所有 bug 的排序。
-- 将 type-cycle prompt/snippet fix 从 Closure-4 的定点成功扩展成更稳的 gate。
-- 将 Mockito constructor/spy MockMaker evidence rule 固化为 snippet/selector 策略。
-- 保留 focused stack trace filtering 和 test-prefix hint extraction 作为默认 retrieval 增强。
-- 暂不启用宽泛 reference-hint boost，因为 Closure 实验显示它会引入噪声。
+- 如果导师或论文篇幅要求更强外部有效性，再开新的 frozen protocol 或新增真实项目 bug logs。
+- 不回调 Closure `61..100` frozen held-out 结果。
+- Mockito 当前 active bugs 已覆盖到 `1..38`，不能再构造新的 Mockito held-out slice。
+- AboutWork / Easy Finance 的 selector 泛化只能通过新增 bug logs 或新时间段 commit 验证。
 
-第三优先级：继续扩大 benchmark 和真实项目 case study。
+第三优先级：错误分析和指标补充。
 
-- `Mockito-20` 已完成 focused hybrid baseline、hard7 diagnostic DeepSeek、M20 ByteBuddy add-on 和 tight selector9。
-- 对 Closure 再做一轮 retrieval diagnostic，而不是直接加大 LLM 调用量。
-- 为 AboutWork 和 Easy Finance 补充新样本，形成 fitted pilot 与 fresh validation 的区分。
-- 用同一套 evaluator 和 worklog 模板记录。
+- 保留 `Closure-4` 作为 recovered evidence/snippet miss pilot case。
+- 保留 `Closure-98` 作为 candidate retrieval miss。
+- 保留 Closure held-out selector false negatives 作为 selector recall 风险。
+- all-file recall / partial recall 可以作为后续补充，不影响当前 any-hit file-level 主表。
 
-第四优先级：RQ5 agentic 再设计。
+第四优先级：RQ5 agentic / verifier 后续。
 
 - 不再盲目增加 agent step。
 - 只选择 one-shot 失败且 evidence 明显不足的样例做 controlled agentic inspection。
 - verifier 只有在输入 evidence 更干净时再重跑；当前 verifier 是 negative ablation。
-
-第五优先级：成本控制。
-
-- 比较 `top_candidates=20/50/80`。
-- 比较 `max_snippet_lines=6/12/18`。
-- 找出准确率和 token 成本之间的平衡点。
-
-第六优先级：论文整理。
-
-- 写方法章节。
-- 写实验设置章节。
-- 写结果表和错误分析。
-- 写 threats to validity。
-- 设计真实项目 case study。
 
 ## 11. 阶段性结论
 
@@ -673,7 +708,7 @@ The remaining failures are increasingly dominated by candidate retrieval misses,
 Retrieval + evidence construction + selective LLM rerank 是一个可行的软件缺陷定位方向。
 ```
 
-在 `Lang-20`、`Math-20`、`Chart-20`、`Time-20`、`Closure-20` 和 `Mockito-20` 上，结果支持一个更清楚的结论：LLM rerank 很适合做第二阶段排序，但它必须建立在高召回候选池和高质量 evidence 之上。AboutWork 和 Easy Finance 进一步说明，该方法可以迁移到真实项目，但 selector 和 evidence rule 需要 fresh data 验证。
+在 `Lang-20`、`Math-20`、`Chart-20`、`Time-20`、`Closure-20` 和 `Mockito-20` 上，结果支持一个更清楚的结论：LLM rerank 很适合做第二阶段排序，但它必须建立在高召回候选池和高质量 evidence 之上。Closure frozen held-out aggregate 提供了当前最干净的 benchmark 主结果；AboutWork 和 Easy Finance 进一步说明，该方法可以迁移到真实项目，但真实项目 selector 和 evidence rule 仍需要新增 bug logs 或新时间段 commit 验证。
 
 现阶段最重要的工程和研究问题已经转变为：
 
@@ -681,39 +716,47 @@ Retrieval + evidence construction + selective LLM rerank 是一个可行的软�
 How can we improve candidate recall and evidence selection before LLM reranking?
 ```
 
-因此，下一阶段应重点把 Closure/Mockito-style hard-case 诊断转成更小、更准、非 oracle 的 selector，并继续改进候选证据质量。RQ5 的 agentic/verifier 暂时不作为主方法，而是作为受控扩展和消融实验。
+因此，后续如果继续补强实验，应重点在新的 frozen protocol 或新增真实项目数据上验证 selector recall 和候选证据质量，而不是继续回调已有 pilot / held-out。RQ5 的 agentic/verifier 暂时不作为主方法，而是作为受控扩展和消融实验。
 
 ## 12. AboutWork 公司项目 Case Study 更新
 
 数据：
 
 - 来源：`/Users/jin/capi_project/aboutwork/COMPANY_BUG_LOG.md`
-- 可用 committed bug logs：39 条
-- 后端样本：17 条
-- 前端样本：22 条
+- 当前数据版本：`data/aboutwork/aboutwork_committed_60.jsonl`
+- 可用 committed bug logs：60 条
+- 后端样本：35 条
+- 前端样本：25 条
 - ground truth：fix commit touched files
 
 Production-only BM25：
 
 | Method | Selected LLM Calls | Top-1 | Top-3 | Top-5 | Top-10 | MRR |
 |---|---:|---:|---:|---:|---:|---:|
-| BM25 production | 0 / 39 | 0.5897 | 0.8462 | 0.9487 | 0.9487 | 0.7171 |
-| BM25 + lowratio_t102 | 8 / 39 | 0.7179 | 0.9231 | 0.9744 | 0.9744 | 0.8150 |
-| BM25 + lowratio_t103 | 11 / 39 | 0.7436 | 0.9231 | 1.0000 | 1.0000 | 0.8342 |
-| BM25 + selector_v3 | 11 / 39 | 0.7692 | 1.0000 | 1.0000 | 1.0000 | 0.8675 |
+| BM25 production top50 | 0 / 60 | 0.5667 | 0.8333 | 0.9167 | 0.9333 | 0.7015 |
+| BM25 + selector_v3 + DeepSeek | 16 / 60 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 |
+| Historical committed-39 BM25 + selector_v3 | 11 / 39 | 0.7692 | 1.0000 | 1.0000 | 1.0000 | 0.8675 |
 
 当前最好结果：
 
 ```text
 BM25 production + selector_v3 + DeepSeek rerank
-selected: 11 / 39
-Top-1:  0.7692
-Top-3:  1.0000
-Top-5:  1.0000
-Top-10: 1.0000
-MRR:    0.8675
-tokens: 303537 total
+selected: 16 / 60
+Top-1:  0.7000
+Top-3:  0.9500
+Top-5:  0.9667
+Top-10: 0.9667
+MRR:    0.8117
+tokens: 519530 total
 ```
+
+AboutWork committed-60 RQ5 extension:
+
+| Method | Selected Records | Model Calls | Top-1 | Top-3 | Top-5 | Top-10 | MRR | Tokens |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| One-shot DeepSeek | 16 / 60 | 16 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 | 519530 |
+| Agentic DeepSeek s2 | 16 / 60 | 40 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 | 440542 |
+| Agentic s2 + verifier | 16 / 60 | 56 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 | 589260 |
 
 selector_v3 使用的非 oracle 规则：
 
@@ -723,9 +766,11 @@ selector_v3 使用的非 oracle 规则：
 
 结论：
 
-- AboutWork 的真实项目数据已经足够做一个小型 case study。
-- LLM rerank 不应该全量调用，选择性调用可以用约 28% 的样本覆盖大部分难例。
-- `selector_v3` 是当前最好的公司项目策略，但它是在这 39 条日志上调出来的，后续需要用新增 bug logs 验证泛化能力。
+- AboutWork committed-60 是当前 RQ4 的 AboutWork 主结果。
+- LLM rerank 不应该全量调用，选择性调用可以用 26.7% 的样本覆盖大部分难例。
+- `selector_v3` 在扩展后的 60 条数据上仍然提升所有 Top-k 指标和 MRR。
+- 当前剩余两个 Top-10 miss 都是 selector false negative：`aboutwork-20260528-002` 和 `aboutwork-20260603-001`。这说明 AboutWork 的下一步重点是 selector recall，而不是 selected-case DeepSeek rerank。
+- Agentic/verifier 已补跑：agentic 与 one-shot 完全持平；verifier 没有改善任何 per-bug correct rank，因此仍作为 RQ5 negative/neutral ablation。
 
 ## 13. Easy Finance 公司项目 Case Study 更新
 
@@ -801,7 +846,7 @@ Verifier ablation：
 - `selector_v1` 只调用 15.9% 的样本，Top-10 从 0.8730 提升到 1.0000。
 - UI evidence v2 把 Top-5 从 0.9524 提升到 0.9841，目前只剩 1 条 Top-5 miss。
 - strict62 敏感性分析排除了 `easyfinance-frontend-20250930-001` 这条 bug text 与实际 touched files 明显不一致的样本后，Top-5 和 Top-10 都达到 1.0000。
-- controlled agentic inspection 可以作为 RQ5 pilot，但当前 Easy Finance strict62 上收益不明显，应优先作为对照实验或后续 verifier-loop 基线。
-- 当前 verifier-loop 没有提升结果，说明独立验证需要更干净的证据选择策略，否则会放大 top-10 中的噪声候选。
+- controlled agentic inspection 可以作为 RQ5 扩展，但当前 Easy Finance strict62 和 Defects4J diagnostic mini-benchmark 都没有证明它优于 one-shot rerank。
+- 当前 verifier-loop 没有提升结果，说明独立验证需要更干净的证据选择策略，否则会放大 top-10 中的噪声候选；Defects4J mini 中 verifier 额外消耗 112181 tokens 但与 agentic 指标完全持平。
 - 这批 bug report 是从 git commit metadata 推断出来的，不如 AboutWork 手写 bug log 严格；结论应标注为 git-history-derived case study。
 - `selector_v1` 和 UI evidence v2 都是在当前 63 条上调出来的 fitted case-study 策略，需要用新增 Easy Finance bug logs 验证泛化。

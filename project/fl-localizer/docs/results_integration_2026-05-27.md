@@ -1,7 +1,7 @@
 # Results Integration: LLM-Assisted Fault Localization
 
 日期：2026-05-27
-最后更新：2026-05-31
+最后更新：2026-06-08
 
 ## 1. 当前结果一句话
 
@@ -428,7 +428,9 @@ Interpretation: `--closure-cost-control-v3` keeps all earlier selected sets unch
 | Closure fresh 21..60 closure cost-control v3 | 20 | 766719 | 38336.0 | 438.358 | 21.918 |
 | Mockito tight selector9 | 9 | 195100 | 21677.8 | 164.742 | 18.305 |
 | Mockito fresh 31..38 cost-control v2 | 4 | 99326 | 24831.5 | 70.298 | 17.575 |
-| AboutWork selector_v3 | 11 | 303537 | 27594.3 | - | - |
+| AboutWork committed-60 selector_v3 one-shot | 16 | 519530 | 32470.6 | 336.034 | 21.002 |
+| AboutWork committed-60 agentic s2 | 16 selected / 40 model calls | 440542 | 27533.9 | 339.600 | 21.225 |
+| AboutWork committed-60 agentic s2 + verifier | 16 selected / 56 model calls | 589260 | 36828.8 | 535.794 | 33.487 |
 | Easy Finance clean63 selector_v1 UI evidence v2 | 10 | 250902 | 25090.2 | - | - |
 | Easy Finance strict62 one-shot selector_v1 UI evidence v2 | 9 | 226860 | 25206.7 | - | - |
 | Easy Finance strict62 agentic s2 | 9 | 250481 | 27831.2 | - | - |
@@ -447,23 +449,33 @@ Development note:
 AboutWork 是公司真实 bug log 数据集，不是公开 benchmark。
 
 ```text
-records: 39 committed-history bug logs
-backend: 17
-frontend: 22
+records: 60 committed bug logs
+backend: 35
+frontend: 25
 ```
 
 当前结果：
 
-| Method | LLM Calls | Top-1 | Top-3 | Top-5 | Top-10 | MRR |
+| Method | Selected Records | Top-1 | Top-3 | Top-5 | Top-10 | MRR |
 |---|---:|---:|---:|---:|---:|---:|
-| BM25 production | 0 / 39 | 0.5897 | 0.8462 | 0.9487 | 0.9487 | 0.7171 |
-| BM25 + selector_v3 + DeepSeek | 11 / 39 | 0.7692 | 1.0000 | 1.0000 | 1.0000 | 0.8675 |
+| BM25 production top50 | 0 / 60 | 0.5667 | 0.8333 | 0.9167 | 0.9333 | 0.7015 |
+| BM25 + selector_v3 + DeepSeek | 16 / 60 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 |
+
+RQ5 extension:
+
+| Method | Selected Records | Model Calls | Top-1 | Top-3 | Top-5 | Top-10 | MRR | Tokens |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| one-shot DeepSeek | 16 / 60 | 16 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 | 519530 |
+| agentic DeepSeek s2 | 16 / 60 | 40 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 | 440542 |
+| agentic s2 + verifier | 16 / 60 | 56 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 | 589260 |
 
 意义：
 
 - 证明这套 pipeline 不只适用于 Defects4J Java benchmark。
-- 真实项目里 selective rerank 也有效：只调用 11/39，就把 Top-3/Top-5/Top-10 提到 1.00。
-- 但 `selector_v3` 是在当前 39 条日志上拟合出来的，需要后续新 bug log 验证泛化。
+- 真实项目里 selective rerank 也有效：只选择 16/60 条调用 DeepSeek，就把 Top-1 从 0.5667 提升到 0.7000，把 MRR 从 0.7015 提升到 0.8117。
+- AboutWork-60 剩余两个 Top-10 miss 都是 selector false negative，说明真实项目的下一步瓶颈是 selector recall。
+- Agentic 和 verifier 已补跑：agentic 与 one-shot 的 per-bug correct rank 完全一致；verifier 额外消耗 148718 tokens 但不改善结果。
+- `selector_v3` 仍需要后续新 bug log 验证泛化。
 
 ## 7. Easy Finance Case Study
 
@@ -505,7 +517,7 @@ strict62 RQ5 result:
 1. LLM rerank 适合做第二阶段 fault localization，而不是替代候选生成器。
 2. 候选池召回是上限；真实文件不在候选池时，LLM 无法补救。
 3. Prompt evidence 质量非常关键。Closure-4、Mockito-20 和 Closure-36 都说明，真实文件在候选池内仍可能因为 snippet 证据差而被漏掉。
-4. Selective rerank 是成本控制关键。Math、Time、Closure、Mockito、AboutWork 和 Easy Finance 都支持 targeted 调用优于无脑全量调用。
+4. Selective rerank 是成本控制关键。Math、Time、Closure、Mockito、AboutWork committed-60 和 Easy Finance 都支持 targeted 调用优于无脑全量调用。
 5. 当前最强结果里 Mockito 已经有一个非 oracle tight selector，但仍是 in-sample 拟合；Closure 的 add-on 也还需要转成非 oracle selector。
 6. RQ5 当前是条件性/负向结果：controlled agentic inspection 可运行但不稳定优于 one-shot，verifier 当前设计不应作为主方法。
 
@@ -514,6 +526,6 @@ strict62 RQ5 result:
 1. 用 fresh Mockito bugs 验证 tight selector9 是否泛化。
 2. 把 Mockito constructor/spy MockMaker evidence rule 固化为默认 snippet/selector 策略。
 3. 继续用新 Closure bug 验证 `closure_cost_control_v1`，再决定是否作为 Closure 主 selector。
-4. 用新增 AboutWork / Easy Finance 样本验证 selector_v3、selector_v1 和 UI evidence v2。
-5. 针对 one-shot 明确失败的 case 重设 agentic inspection，而不是盲目增加 agent step。
-6. 开始写阶段性论文/汇报的 Results、Discussion 和 Threats to Validity。
+4. 继续用后续新增 AboutWork / Easy Finance 样本验证 selector_v3、selector_v1 和 UI evidence v2 的泛化。
+5. 针对 one-shot 明确失败且 evidence 明显不足的 case 重设 agentic inspection，而不是盲目增加 agent step。
+6. 当前实验已足够进入论文 Results、Discussion 和 Threats to Validity 写作收口。

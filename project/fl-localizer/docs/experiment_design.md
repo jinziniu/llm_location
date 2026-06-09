@@ -1,7 +1,7 @@
 # LLM-Assisted Fault Localization Experiment Design
 
 生成日期：2026-05-26  
-更新日期：2026-06-02
+更新日期：2026-06-08
 
 ## 1. 实验目标
 
@@ -59,6 +59,17 @@ Closure-20
 Mockito-20
 ```
 
+此外，已完成 Closure 和 Mockito 的 fresh / held-out validation：
+
+| Dataset | Role | Size | Status |
+|---|---|---:|---|
+| Closure-21..60 | fresh validation | 40 | completed |
+| Closure-61..100 | frozen held-out aggregate | 38 | completed |
+| Mockito-21..30 | fresh attempt | 9 usable | completed |
+| Mockito-31..38 | fresh validation | 8 | completed |
+
+当前 Defects4J checkout 中 Mockito active bugs 只有 `1..38`，已经被 pilot 和 fresh validation 覆盖，因此不能再构造新的 Mockito held-out slice。Closure `61..100` 是当前最干净的 frozen held-out 主结果。
+
 每个 bug record 包含：
 
 - `bug_id`
@@ -84,9 +95,10 @@ AboutWork 是真实公司 bug log 数据，用于检验方法在人工记录 bug
 当前数据状态：
 
 ```text
-records: 39
+records: 60
 baseline: BM25 production
 main method: BM25 production + selector_v3 + DeepSeek rerank
+selected LLM calls: 16 / 60
 ```
 
 该数据集适合回答 RQ4：benchmark 中有效的方法是否能迁移到公司日常 bug log。
@@ -102,7 +114,22 @@ clean63
 strict62
 ```
 
-Easy Finance 当前也是 controlled agentic inspection 和 verifier rerank 的主要试验场。已有结果显示 agentic/verifier 技术上可运行，但暂时没有稳定超过 one-shot UI evidence rerank。
+Easy Finance、Defects4J diagnostic mini-benchmark 和 AboutWork committed-60
+当前都完成了 controlled agentic inspection / verifier rerank 扩展。已有结果显示
+agentic/verifier 技术上可运行，但没有稳定超过 one-shot evidence-aware rerank。
+
+### 3.4 当前实验完成度
+
+| Research Part | Evidence | Status | Thesis Use |
+|---|---|---|---|
+| Defects4J pilot | 6 projects x 20 bugs | completed | method feasibility and failure-mode discovery |
+| Defects4J fresh validation | Closure `21..60`, Mockito `21..38` usable records | completed | selector/rule generalization evidence |
+| Defects4J frozen held-out | Closure `61..100`, 38 usable bugs | completed | main benchmark claim |
+| Real-project transfer | AboutWork committed-60, Easy Finance clean63/strict62 | completed case studies | RQ4 transfer evidence |
+| Agentic/verifier | Easy Finance strict62, Defects4J RQ5 mini, AboutWork committed-60 | completed ablation | RQ5 negative/conditional result |
+| Error analysis | Closure held-out, Mockito fresh, Easy Finance RQ5, Defects4J RQ5 mini | completed table | discussion and validity threats |
+
+当前设计已经足够支撑论文实验章节初稿。继续扩大到全量 Defects4J 会显著增加构建和 LLM 成本，但不一定比现有 frozen held-out + case study 更能解决当前论文的核心问题。更合适的下一步是写作收口、表格统一和审稿式 consistency check。
 
 ## 4. 系统流程
 
@@ -268,13 +295,18 @@ produce final JSON ranking
 - 记录每一步 tool trace。
 - 不允许访问 ground truth、fixed commit diff 或 post-fix code。
 
-当前 Easy Finance strict62 pilot 说明：agentic inspection 可以稳定运行并生成合法 JSON，但相对 one-shot UI evidence rerank 没有清晰提升，且 token 成本更高。因此现阶段应作为 RQ5 消融和讨论材料，而不是主方法。
+当前 Easy Finance strict62、Defects4J diagnostic mini-benchmark 和 AboutWork
+committed-60 说明：agentic inspection 可以稳定运行并生成合法 JSON/trace，但
+相对 one-shot evidence-aware rerank 没有清晰提升。因此现阶段应作为 RQ5 消融
+和讨论材料，而不是主方法。
 
 ### 5.7 Verifier Rerank
 
 Verifier rerank 是 agentic 之后的独立检查步骤。它接收 bug report、agent top-10、固定 snippets 和 prior observations，再输出最终排序。
 
-当前 Easy Finance strict62 结果显示 verifier 没有提升 agentic ranking，反而略降 MRR，并增加明显 token 成本。因此 verifier 暂时作为 negative ablation：
+当前 Easy Finance strict62、Defects4J diagnostic mini-benchmark 和 AboutWork
+committed-60 结果显示 verifier 没有提升 agentic ranking，并增加明显 token 成本。
+因此 verifier 暂时作为 negative ablation：
 
 ```text
 Do not use verifier as the main method.
@@ -507,6 +539,10 @@ MRR:   0.8644
 | Closure-21..60 | cost-control v3 + DeepSeek | 40 | 20 | 0.6000 | 0.8000 | 0.9750 | 1.0000 | 0.7348 |
 | Closure-61..80 held-out | frozen retrieval baseline | 19 | 0 | 0.4737 | 0.4737 | 0.5789 | 0.7368 | 0.5344 |
 | Closure-61..80 held-out | frozen cost-control v3 + DeepSeek | 19 | 6 | 0.6316 | 0.7368 | 0.7895 | 0.8947 | 0.7018 |
+| Closure-81..100 held-out | frozen retrieval baseline | 19 | 0 | 0.3158 | 0.5789 | 0.6316 | 0.6842 | 0.4815 |
+| Closure-81..100 held-out | frozen cost-control v3 + DeepSeek | 19 | 5 | 0.4737 | 0.6842 | 0.7368 | 0.7895 | 0.6009 |
+| Closure-61..100 held-out aggregate | frozen retrieval baseline | 38 | 0 | 0.3947 | 0.5263 | 0.6053 | 0.7105 | 0.5080 |
+| Closure-61..100 held-out aggregate | frozen cost-control v3 + DeepSeek | 38 | 11 | 0.5526 | 0.7105 | 0.7632 | 0.8421 | 0.6513 |
 | Mockito-31..38 fresh | focused retrieval baseline | 8 | 0 | 0.1250 | 0.5000 | 0.7500 | 0.8750 | 0.3382 |
 | Mockito-31..38 fresh | cost-control v2 + DeepSeek | 8 | 4 | 0.6250 | 1.0000 | 1.0000 | 1.0000 | 0.7500 |
 
@@ -514,7 +550,10 @@ MRR:   0.8644
 
 - `Closure-61..80` 是当前第一组明确 frozen protocol held-out run，协议见 `docs/frozen_protocol_2026-06-01.md`。
 - `Closure-61..80` 在 selector 只调用 6/19 的情况下提升 Top-1、Top-3、Top-5、Top-10 和 MRR，但 selector 漏选 `Closure-61`、`Closure-65`、`Closure-67`、`Closure-75`。
+- `Closure-81..100` 是第二组明确 frozen protocol held-out run，协议见 `docs/frozen_protocol_2026-06-02_closure_81_100.md`；它继续显示 selected-case rerank 有效，但 selector recall 和 candidate recall 仍是限制。
+- `Closure-61..100` aggregate 是当前最干净的主方法 held-out 表：38 bugs，11 次 LLM 调用，Top-5 0.6053 -> 0.7632，MRR 0.5080 -> 0.6513。
 - `Closure-21..60` 和 `Mockito-31..38` 支持 selector/rerank 方向，但仍应标注为 fresh / experimental validation，而不是最终冻结协议。
+- 当前 Defects4J Mockito active bugs 只有 1..38，已全部被 pilot/fresh 覆盖，因此没有新的 Mockito held-out slice 可跑。
 - 后续新协议可以使用这些 false negatives 做 error analysis，但不能反向修改已经报告的 frozen held-out 结果。
 
 ### 9.2 AboutWork 当前结果
@@ -522,15 +561,28 @@ MRR:   0.8644
 AboutWork 数据集：
 
 ```text
-records: 39
+records: 60
+backend: 35
+frontend: 25
 ```
 
 | Method | LLM calls | Top-1 | Top-3 | Top-5 | Top-10 | MRR |
 |---|---:|---:|---:|---:|---:|---:|
-| BM25 production | 0 | 0.5897 | 0.8462 | 0.9487 | 0.9487 | 0.7171 |
-| BM25 + selector_v3 + DeepSeek | 11 | 0.7692 | 1.0000 | 1.0000 | 1.0000 | 0.8675 |
+| BM25 production top50 | 0 | 0.5667 | 0.8333 | 0.9167 | 0.9333 | 0.7015 |
+| BM25 + selector_v3 + DeepSeek | 16 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 |
 
-该结果支持 RQ4：在真实 bug log 上，selective LLM rerank 可以用较少调用提升排序质量。
+该结果支持 RQ4：在真实 bug log 上，selective LLM rerank 可以用 16/60 次调用提升排序质量。当前剩余两个 Top-10 miss 都是 selector false negative，说明 AboutWork 的下一步瓶颈是 selector recall，而不是 selected-case DeepSeek 排序能力。
+
+AboutWork committed-60 RQ5 extension:
+
+| Method | Selected Records | Model Calls | Top-1 | Top-3 | Top-5 | Top-10 | MRR |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| BM25 + selector_v3 + one-shot DeepSeek | 16 / 60 | 16 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 |
+| BM25 + selector_v3 + agentic DeepSeek s2 | 16 / 60 | 40 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 |
+| BM25 + selector_v3 + agentic s2 + verifier | 16 / 60 | 56 | 0.7000 | 0.9500 | 0.9667 | 0.9667 | 0.8117 |
+
+AboutWork-60 上 one-shot、agentic 和 agentic + verifier 的 per-bug correct
+rank 完全一致；verifier 额外增加 token 和时间成本但没有改善排序。
 
 ### 9.3 Easy Finance 当前结果
 
@@ -558,7 +610,7 @@ Easy Finance strict62：
 
 ## 10. 结果分析计划
 
-每个数据集输出四类表：
+论文结果章节应输出四类表：
 
 1. 方法整体指标表。
 2. 候选召回表。
@@ -572,10 +624,11 @@ Easy Finance strict62：
 - Extension：controlled agentic inspection。
 - Ablation：verifier、snippet strategy、selector strategy。
 
-错误分析分类：
+当前错误分析已经整理到 `docs/error_analysis_table_2026-06-03.md`。论文中建议保留以下分类：
 
 - Retrieval miss。
 - Candidate present but rerank miss。
+- Recovered evidence/snippet miss。
 - Weak snippet / missing method evidence。
 - Noisy stack trace。
 - Ambiguous bug report。
@@ -641,23 +694,32 @@ Easy Finance strict62：
 - Easy Finance controlled agentic s2 pilot。
 - Easy Finance verifier negative ablation。
 
-第三阶段：整理最终实验设计和结果报告，当前进行中。
+第三阶段：整理最终实验设计和结果报告，已基本完成。
 
 - 2026-06-01 已完成第一轮 frozen held-out validation：`Closure-61..80`，19 records，selector 6/19，merged Top-5 0.7895、Top-10 0.8947、MRR 0.7018。
-- 当前需要把 frozen held-out 和 fresh validation 分开写入论文结果章节。
+- 2026-06-02 已完成第二轮 frozen held-out validation：`Closure-81..100`，19 records，selector 5/19，merged Top-5 0.7368、Top-10 0.7895、MRR 0.6009。
+- 2026-06-02 已完成 Closure frozen held-out aggregate：`Closure-61..100`，38 records，selector 11/38，merged Top-5 0.7632、Top-10 0.8421、MRR 0.6513。
 - 2026-06-02 已新增论文结果草稿与 held-out selector error analysis：
   - `docs/results_chapter_draft_2026-06-02.md`
   - `docs/closure_heldout_61_80_selector_error_analysis.md`
+  - `docs/closure_heldout_81_100_validation_report.md`
+  - `docs/closure_frozen_heldout_61_100_summary.md`
+- 2026-06-03 已新增论文实验章节拆分稿、总章草稿和小型错误分析表：
+  - `docs/thesis_experiment_chapter_draft_2026-06-03.md`
+  - `docs/thesis_experiment_sections_2026-06-03.md`
+  - `docs/error_analysis_table_2026-06-03.md`
+  - `docs/evidence_rule_evolution_closure4_typecycle.md`
 
 - 将 proposal、experiment design、current results report 对齐。
 - 把主方法、extension 和 ablation 分开报告。
 - 更新结果表和 RQ 对应关系。
 - 明确 no-leakage 规则。
 
-第四阶段：补强实验。
+第四阶段：可选补强实验。
 
-- 对 selector 做 non-oracle validation。
-- 对 Closure / Mockito 的 targeted evidence 做自动化规则验证。
+- 只有在论文篇幅或导师反馈要求更强外部有效性时，才继续补新样本。
+- 对 selector 做新的 non-oracle frozen validation，而不是回调已有 held-out。
+- 对 Closure / Mockito 的 targeted evidence 做新的自动化规则验证。
 - 在 Easy Finance 上只针对 one-shot 失败样例重新设计 agentic run。
 - 选择是否补跑更多 AboutWork bug logs。
 
@@ -669,6 +731,8 @@ Easy Finance strict62：
 - 错误分析。
 - 有效性威胁。
 - 工程复现说明。
+
+当前最适合进入第五阶段：把 `docs/thesis_experiment_sections_2026-06-03.md` 拆到论文正文，并把表格、RQ 回答、错误分析、有效性威胁统一成最终格式。
 
 ## 13. 预期贡献
 

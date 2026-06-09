@@ -18,6 +18,20 @@ from fl_localizer.io_utils import write_jsonl
 HEADING_RE = re.compile(r"^### (?P<date>\d{4}-\d{2}-\d{2}) - (?P<title>.+)$", re.MULTILINE)
 FIELD_RE = re.compile(r"^[A-Za-z][A-Za-z0-9 /_-]*:\s*$")
 COMMIT_RE = re.compile(r"\b[0-9a-f]{7,40}\b")
+SOURCE_FILE_SUFFIXES = (
+    ".css",
+    ".html",
+    ".js",
+    ".jsx",
+    ".json",
+    ".md",
+    ".py",
+    ".scss",
+    ".ts",
+    ".tsx",
+    ".yaml",
+    ".yml",
+)
 
 
 def run_git(repo: Path, *args: str) -> str:
@@ -136,10 +150,18 @@ def infer_repo(fix_line: str, ground_truth_files: list[str], backend_repo: Path,
     return None
 
 
-def normalize_ground_truth_file(path: str, repo_name: str) -> str:
-    normalized = path.strip().strip("`")
+def normalize_ground_truth_file(path: str, repo_name: str) -> str | None:
+    backtick_match = re.search(r"`([^`]+)`", path)
+    normalized = backtick_match.group(1).strip() if backtick_match else path.strip().strip("`")
+    normalized = normalized.rstrip(".,;")
     if repo_name == "frontend" and normalized.startswith("frontend/"):
-        return normalized.removeprefix("frontend/")
+        normalized = normalized.removeprefix("frontend/")
+    if repo_name == "frontend" and not normalized.startswith("src/"):
+        return None
+    if repo_name == "backend" and not normalized.startswith("backend/"):
+        return None
+    if not normalized.lower().endswith(SOURCE_FILE_SUFFIXES):
+        return None
     return normalized
 
 
@@ -200,10 +222,36 @@ def build_record(
     trigger = section_text(body, "Trigger")
     evidence = section_text(body, "Failure evidence", "Pre-fix evidence")
     area = clean_markdown_lines(field_lines(body, "Area"))
-    ground_truth_files = [
-        normalize_ground_truth_file(path, repo_name)
-        for path in ground_truth_raw
-    ]
+    ground_truth_files: list[str] = []
+    excluded_ground_truth_entries: list[str] = []
+    for path in ground_truth_raw:
+        normalized = normalize_ground_truth_file(path, repo_name)
+        if normalized:
+            ground_truth_files.append(normalized)
+        else:
+            excluded_ground_truth_entries.append(path)
+
+    if not ground_truth_files:
+        return None
+
+    existing_ground_truth_files: list[str] = []
+    missing_ground_truth_files: list[str] = []
+    ground_truth_path_remaps: list[dict[str, str]] = []
+    for path in ground_truth_files:
+        if (repo_path / path).is_file():
+            existing_ground_truth_files.append(path)
+            continue
+        if repo_name == "backend" and path.startswith("backend/backend/"):
+            remapped = path.removeprefix("backend/")
+            if (repo_path / remapped).is_file():
+                existing_ground_truth_files.append(remapped)
+                ground_truth_path_remaps.append({"from": path, "to": remapped})
+                continue
+        missing_ground_truth_files.append(path)
+
+    if not existing_ground_truth_files:
+        return None
+    ground_truth_files = existing_ground_truth_files
 
     report_text_parts = [
         f"Title: {entry['title']}",
@@ -236,6 +284,9 @@ def build_record(
         "extra_context": {
             "area": area,
             "date": entry["date"],
+            "excluded_ground_truth_entries": excluded_ground_truth_entries,
+            "excluded_ground_truth_files_not_in_buggy_commit": missing_ground_truth_files,
+            "ground_truth_path_remaps": ground_truth_path_remaps,
             "repo": repo_name,
             "source": "AboutWork company bug log",
             "leakage_note": "Fix commit metadata and ground truth are for evaluation only.",
